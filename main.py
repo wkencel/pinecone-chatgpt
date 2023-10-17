@@ -117,7 +117,7 @@ def gpt3_completion(prompt, engine='text-davinci-003', temp=0.0, top_p=1.0, toke
 def load_conversation(results):
   result = list()
   for m in results['matches']:
-    info = load_data('db/%s.json' % m['id'])
+    info = load_data('db/%s.db' % m['id'])
     result.append(info)
   ordered = sorted(result, key=lambda d: d['time'], reverse=False)
   messages = [i['message'] for i in ordered]
