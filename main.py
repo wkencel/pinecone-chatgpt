@@ -42,7 +42,7 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {
-        "message": "Make a post request to /ask to ask a question by virtual pastor"
+        "message": "Make a post request to /article to ask a question by virtual assistant"
     }
 
 @app.post("/db")
