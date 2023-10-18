@@ -9,6 +9,11 @@ from uuid import uuid4
 from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from article_scraper import get_article_urls, get_article_content
+
+# Load environment variables from .env
+load_dotenv()
 
 class RequestParams(BaseModel):
   article: str
@@ -26,8 +31,20 @@ if not os.path.exists(DB_FOLDER):
 
 convo_length = 30
 openai.api_key = OPENAI_KEY
+
+# Create the pinecone vector database
 pinecone.init(api_key=PINECODE_KEY, environment=PINECODE_ENVIRONMENT)
-vdb = pinecone.Index(PINECODE_DBNAME)
+# uncomment these lines of code if it's your first time running. needed to create the pinecone index
+
+# # delete the pinecone index in case it already exists
+# pinecone.delete_index(PINECODE_DBNAME)
+# # create the pinecone index
+# pinecone.create_index(PINECODE_DBNAME, dimension=8, metric="euclidean")
+# #  print info of pinecone db
+# print(pinecone.list_indexes())
+# pinecone.describe_index(PINECODE_DBNAME)
+
+vdb = pinecone.Index(index_name=PINECODE_DBNAME)
 
 app = FastAPI()
 
@@ -43,11 +60,45 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {
-        "message": "Make a post request to /ask to ask a question by virtual pastor"
+        "message": "Make a post request to /ask to ask a question"
     }
+# @app.post("/article")
+# def create_answer(params: RequestParams):
+#     question = params.article
+#     if question == '':
+#         return {"type": "error"}
+#     else:  
+#         vector = gpt3_embedding(question) # Get embedding for the question
+#         results = vdb.query(vector=vector, top_k=convo_length) # Find the closest vectors in the vector database
+#         articles = load_articles(results) # Load the articles related to those vectors
+#         prompt = PROMPT_RESPONSE.replace('<TITLE>', question).replace('<ARTICLE>', articles) # Formulate the prompt for GPT-3
+#         output = gpt3_completion(prompt) # Generate the response from GPT-3
+#         return { "answer": output }
+
+# def load_articles(results):
+#     result = list()
+#     for m in results['matches']:
+#         info = load_data('%s/%s.db' % (DB_FOLDER, m['id'])) # Load the relevant articles
+#         result.append(info['article']) # Extract the article text
+
+def extract_article_text_save_to_db():
+  articles_urls = get_article_urls()
+  payload = []
+
+  for url in articles_urls:
+    article = get_article_content(url)
+    vector = gpt3_embedding(article) # Get embeddings for the articles
+    unique_id = str(uuid4())
+    metadata = {'uuid': unique_id, 'article': article }
+    save_data('%s/%s.db' % (DB_FOLDER, unique_id), metadata) # save a local copy of the article
+    payload.append((unique_id, vector))  # add to the payload
+  vdb.upsert(payload)
+
+extract_article_text_save_to_db()
 
 @app.post("/article")
 def create_answer(params: RequestParams):
+
   question = params.article
   if question == '':
     return { "type": "error" }
