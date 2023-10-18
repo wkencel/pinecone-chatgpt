@@ -22,7 +22,7 @@ API:
 ```
 method: POST
 URL: http://127.0.0.1/8000/article
-body: { "article": "test test" }
+body: { "question": "test test" }
 ```
 
 - Curl
@@ -33,6 +33,6 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
-  "article": "test test"
+  "question": "test test"
 }'
 ```
