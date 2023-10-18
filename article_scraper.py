@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import requests
+import re
 
 # Function to scrape all URLs from Learning Center Page
 def get_article_urls():
